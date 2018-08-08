@@ -1,0 +1,332 @@
+---
+title: "Understanding and addressing missing data in NYTD"
+author: Michael Dineen (med39@cornell.edu) and Frank Edwards (fedwards@cornell.edu)
+  National Data Archive on Child Abuse and Neglect
+date: "August 22, 2018"
+output: ioslides_presentation
+---
+
+## Agenda for today's webinar 
+
+* Develop a clear understanding of the design of the NYTD and the structure of the sample
+* Discuss differences in the composition of state samples and methods states use to collect data
+* Discuss sources of missing data and non-response
+* Discuss the theories behind statistical approaches to missing data, with a focus on multiple imputation
+* Discuss some practical strategies to address missing data in the NYTD
+
+# NYTD Design
+
+## Understanding the structure of the National Youth in Transition Database (NYTD)
+
+* The user's guide is your friend
+* The NYTD Outcomes Survey is ongoing, with new cohorts commencing every 3 years, starting with Federal Fiscal Year 2011.
+     + Cohort 1 was 17 in 2011, Cohort 2 was 17 in 2014
+* Each Cohort has three waves, with two years between surveys
+     + Cohort 1 [2011, 2013, 2015], Cohort 2 [2014, 2016, 2018]
+
+## Who is in the NYTD?
+
+* Any youth who is in foster care within the 45-day period following their 17th birthday is eligible for the survey.
+* The baseline survey is not a sample - the entire population of youth who meet the inclusion criteria is surveyed.
+* Demographic data on all youth in the baseline population is included in the baseline (Wave 1) data.
+
+## Who is in the cohort?
+
+* Youth who answer at least one survey question on the baseline survey are in the cohort.
+* Follow-up surveys are conducted on youth in the cohort during the six-month AFCARS reporting period that includes the youth's 19th and 21st birthdays. 
+
+# Sampling in the NYTD
+
+## State sampling
+
+* States are permitted to sample the cohort for the age 19 and 21 follow-ups.
+* Simple random sampling is required
+* Sampling is done once, after the cohort is determined. 
+* The same sample is used for both the age 19 and age 21 surveys.
+
+## The consequences of sampling for data analysis
+
+* Sampling lowers the response rate, since the denominator is always the population the survey is intended to represent - i.e. age 17 foster care youth.
+* Sample states lost about 75% of their cases at Wave 2; Non-sample states lost about 45%
+
+# Sources of missing data in the NYTD
+
+## Sources of missing data: not-in-cohort
+
+* Response in Wave 1 to voluntary questions is required to be selected for the cohort
+& Youth who do not respond to the baseline survey are not followed-up at subsequent waves, so all survey data for these cases are missing
+* However, demographic data are present
+* This means that the cohort is not a random or representative sample if choosing to respond is associated with any of the variables in the study.
+
+## Wave non-response
+
+* Youth did not participate in a wave. 
+* All survey data for that wave will be missing for that row. 
+* Demographics will be present. 
+* This is common. Of the 18,213 youth eligible at Wave 1, only 5,663 responded to all three surveys, and 8,837 responded only at Wave 1.
+
+## Reasons for non-response
+
+* Youth declined: The State agency located the youth successfully and invited the youth's participation, but the youth declined to participate in the data collection. 
+* Parent declined: The State agency invited the youth's participation, but the youth's parent/guardian declined to grant permission. 
+     + This response may be used only when the youth has not reached the age of majority in the State and State law or policy requires a parent/guardian's permission for the youth to participate in information collection activities. 
+
+## Reasons for non-response
+
+* Incapacitated: The youth has a permanent or temporary mental or physical condition that prevents him or her from participating in the outcomes data collection.
+* Incarcerated: The youth is unable to participate in the outcomes data collection because of his or her incarceration. 
+* Runaway/missing: A youth in foster care is known to have run away or be missing from his or her foster care placement. 
+* Unable to locate/invite: The State agency could not locate a youth who is not in foster care or otherwise invite such a youth's participation. 
+* Death: The youth died prior to his participation in the outcomes data collection. 
+
+## Question non-response
+
+* Very few respondents answered all the questions
+     + This is the easiest form of missing data to deal with!
+
+# Approaches to missing data 101
+
+## Why should we care?
+
+* Most statistical software will conduct "complete-case analysis" by default
+     + This uses only those observations where regression outcomes and all predictors are non-missing
+* Depending on how much data is missing in the variables you've chosen, this may result in throwing away a lot of perfectly good information!
+* This (at minimum) biases your standard errors, and may bias your parameter point estimates
+* With a few assumptions, we can correct the problem
+
+## Why are data missing?
+
+* **Missing completely at random (MCAR)**: The probability of a value being missing is the same for all observations in the data. Missingness is determined by a coin flip/dice roll
+* **Missing at random (MAR)**: The probability of a value being missing is *not* completely at random, depends only on available (observed) information. The probability of a value being missing is determined by other variables in the data
+* **Non-random missing data (MNAR)**: The probability of a value being missing depends on either *A)* some unobserved variable or *B)* the value itself (censorship)
+
+## Basic approaches to missing data
+
+* Listwise deletion (complete case analysis)
+     + Appropriate for data with very few missing observations, or when missingness is completely at random and missingness is rare (independent of all observed and unobservable variables)
+* Using alternative information (e.g. inferring wages based on hours worked)
+* Nonresponse weighting
+     + Becomes difficult when many variables are missing, sub-populations of interest differ
+
+## Basic approaches to missing data
+
+* Deterministic imputation methods
+     + Many examples: linear interpolation or last observed, regression imputation
+     + This is generally a bad idea. Covariance estimates and standard errors are biased downward
+
+## Basic approaches to missing data
+
+* Multiple imputation
+     + Iterative modeling of all missing outcomes/predictors in model
+     + Produces fake datasets, allows you to average over uncertainty generated by missing data
+     + Does not recover "true" values
+     + Under missing at random assumption, generates unbiased parameter and variance estimates
+     
+## What muliple imputation does:
+
+* Has two effects on model uncertainty 
+     * Increases your N because we aren't deleting data (pushes variance downward) 
+     * And adds in appropriate noise due to uncertainty around where missing values are (pushes variance upward)
+
+## My preferred approach
+
+* Understand your data!
+     + Read the documentation
+     + Do plenty of exploratory data analysis (cross tabs, data visuals, descriptives, look at the raw data)
+     + Develop an understanding of the mechanisms of missing data in each dataset you use
+     + Test your ideas for mechanisms of missing data when feasible
+     
+## My preferred approach
+
+* Use available information
+     + Borrow data from other observations when possible
+     + Some variables are time-stable (age) and can be borrowed from prior observations - but remember cautions against deterministic imputation and inducing bias
+     
+## My preferred approach
+
+* If MAR is a reasonable assumption (it often is), conduct multiple imputation
+     + Because MAR is conditional on observables, including many variables in imputation models is often a good idea
+* Apply preferred final model / analysis over each of *i* imputed datasets, combine with Rubin's rules, report revised uncertainty estimates. 
+
+# Applying missing data methods to NYTD: a very brief introduction
+
+## Some notes before starting
+
+* This is a very brief introduction, more work will be required to get it right for your analysis
+* I'm using R (and the mice package) for my demo, but all major statistical software (Stata, SAS, SPSS) should be able to use similar techniques
+* All code (and slides, but no data!) is available at https://github.com/f-edwards/nytd_missing_data_demo
+
+## Load in packages and data
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### load required packages
+library(tidyverse)
+library(mice)
+### read in comma separated data
+nytd<-read_csv("nytd.csv")
+demographics<-read_csv("nytd_demog.csv")
+```
+
+## Describe patterns of cohort and wave non-response
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### count total subjects
+length(unique(demographics$StFCID))
+### count responses per wave
+table(nytd$Wave, nytd$Responded==1)
+```
+
+## Total population and cohort size
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### count total population, cohort based on W1 response
+pop<-length(unique(demographics$StFCID))
+pop
+cohort<-sum(nytd[nytd$Wave==1, "Responded"]==1)
+cohort
+```
+
+## Non-response by wave relative to population and cohort size
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### count responses per wave as pct of pop, cohort
+nytd%>%
+  group_by(Wave)%>%
+  filter(Responded==1)%>%
+  summarise(n = n(), Pct_Pop = n()/pop, Pct_Cohort = n()/cohort)
+```
+
+## Non-response by gender
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+nytd$Sex<-ifelse(nytd$Sex==1, "Male", "Female")
+plot_dat<-nytd%>%
+  group_by(Wave, Sex)%>%
+  summarise(Pct_Responded = sum(Responded==1)/n())%>%
+  filter(!(is.na(Sex)))
+ggplot(plot_dat,
+  aes(x = Sex, y= Pct_Responded)) + geom_col() + facet_wrap(~Wave)
+```
+
+## Non-response by race (Black/non-Black)
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+nytd$BlkAfrAm<-recode(nytd$BlkAfrAm, '0' = "Not Black", '1' = "Black", '77' = "Unknown")
+plot_dat<-nytd%>%
+  group_by(Wave, BlkAfrAm)%>%
+  summarise(Pct_Responded = sum(Responded==1)/n())
+ggplot(plot_dat,
+  aes(x = BlkAfrAm, y= Pct_Responded)) + geom_col() + facet_wrap(~Wave)
+```
+
+## Question non-response
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+recode_q<-function(x){recode(x, '0'="no", '1'="yes", '2'="declined", '77'="blank")}
+plot_dat<-nytd%>%
+  mutate(CurrFTE = recode_q(CurrFTE))%>%
+  group_by(Wave, CurrFTE)%>%
+  summarise(count = n())
+ggplot(plot_dat,
+  aes(x = CurrFTE, y= count)) + geom_col() + facet_wrap(~Wave)
+```
+
+## Proceeding with MI
+
+* For the purposes of demonstration, we'll assume that CurrFTE is MAR conditional on sex and age. 
+* This seems believable - desirability may encourage young men to diferentially non-respond
+* But a full imputation model should include *AS MANY* predictors as possible to maximize predictive performance and satisfy MAR assumption. This is just a demonstration of what we can do
+* Note that models grow in complexity as new predictors (with their own missing values) increase computation time 
+
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+nytd_reduced<-nytd%>%
+  filter(Responded==1)%>%
+    mutate(CurrFTE = recode_q(CurrFTE),
+         CurrFTE = ifelse(CurrFTE=="declined", NA, CurrFTE))%>%
+  select(Sex, Wave, CurrFTE)%>%
+  mutate(Sex = factor(Sex),
+         Wave = factor(Wave),
+         CurrFTE = factor(CurrFTE))
+  
+```
+
+## Look at missing data patterns
+
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### install.packages("mice") if needed
+### wonderful tutorials at https://stefvanbuuren.github.io/mice/
+library(mice)
+mice::md.pattern(nytd_reduced)
+### 1 = variable not missing, zero = missing, 
+## #first row is count of observations
+```
+## Predictors and methods
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+imp<-mice(nytd_reduced, maxit=0, seed = 123)
+### show the predictor matrix
+imp$predictorMatrix
+### show imputation methods
+imp$method
+```
+
+## Impute data with 5 imputed data sets
+
+```{r message = FALSE, warning = FALSE, cache = TRUE}
+imp_out<-mice(nytd_reduced, 
+              maxit = 10, 
+              m = 5, 
+              seed = 123,
+              predictorMatrix = imp$predictorMatrix,
+              method = imp$method)
+```
+## Check out convergence
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+
+plot(imp_out)
+
+```
+
+## Compare imputed to original data
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### first imputed dataset
+table(nytd_reduced$CurrFTE)
+table(complete(imp_out)$CurrFTE)
+```
+
+
+## Conduct a pooled analysis
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### fit logistic regression on each imputed data set
+fit<-with(imp_out, glm(CurrFTE == "yes" ~ Sex + Wave, 
+                       family = "binomial"))
+### can view individual model outputs with summary(fit)
+```
+## View model output
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+summary(pool(fit))[,1:3]
+```
+# Going deeper
+
+## Possible extensions of this method
+
+* The method allows us to preserve data for respondents who selectively did not answer individual questions within NYTD
+* The method could be extended to impute missing records for respondents who did not respond to the full survey in individual waves
+     + Multilevel imputation procedures are appropriate for these cases
+     
+## Possible extensions of this method
+* Theoretically, the method could be used to estimate uncertainty intervals for population-level parameters for the full NYTD-eligible population
+     + Though this would be computationally intensive and 
+     + Stretch the MAR assumption perhaps too far (if participation in the cohort is conditional on unobservables)
+     
+## Final notes
+
+* Approaches to missing data are not one-size fits all. 
+* Think hard about why your data are missing
+* If they are MAR conditional on observables, MI may be appropriate
+
+## Further reading 
+
+* Rubin, "Multiple Imputation for Nonresponse in Surveys"
+* Gelman and Hill, "Data Analysis Using Regression and Multilevel/Hierarchical Models"
+* van Buuren, "mice: Multivariate Imputation by Chained Equations in R"
+
+## Thank you
+
+Code and slides available at:
+
+https://github.com/f-edwards/nytd_missing_data_demo
+
+fedwards@cornell.edu
