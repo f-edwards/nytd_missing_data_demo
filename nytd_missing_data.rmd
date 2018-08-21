@@ -6,6 +6,31 @@ date: "August 22, 2018"
 output: ioslides_presentation
 ---
 
+## Summer of NYTD Session 3
+
+*Session starts at 12pm EST*
+
+* Please turn your video off and mute your line
+* This session is being recorded
+* See ZOOM Help Center for connection issues: https://support.zoom.us/hc/en-us 
+     - If issues persist and solutions cannot be found through Zoom contact hl332@cornell.edu 
+
+## Introduction
+
+* Summer schedule: 
+
+    - August 8th  - Introduction
+    - August 15th  - Data Structure
+    - **August 22nd   - Expert Presentation I**
+    - August 29th  - Expert Presentation II
+    - September 5th  - Linking to NCANDS & AFCARS
+    - September 12th - Research Presentation I
+    - September 19th - Research Presentation II
+    
+## Today's Presentation: Understanding and addressing missing data in NYTD
+
+Presenters: Michael Dineen (med39@cornell.edu) and Frank Edwards (fedwards@cornell.edu)
+
 ## Agenda for today's webinar 
 
 * Develop a clear understanding of the design of the NYTD and the structure of the sample
@@ -18,7 +43,7 @@ output: ioslides_presentation
 
 ## Understanding the structure of the National Youth in Transition Database (NYTD)
 
-* The user's guide is your friend
+* The user's guide and codebook are your friends
 * The NYTD Outcomes Survey is ongoing, with new cohorts commencing every 3 years, starting with Federal Fiscal Year 2011.
      + Cohort 1 was 17 in 2011, Cohort 2 was 17 in 2014
 * Each Cohort has three waves, with two years between surveys
@@ -38,8 +63,6 @@ output: ioslides_presentation
      - Took the survey within 45 days of their 17th birthday
 * Follow-up surveys are conducted during the six-month AFCARS reporting period that includes the youth's 19th and 21st birthdays. 
 
-# Sampling in the NYTD
-
 ## State sampling
 
 * States are permitted to sample the cohort for the age 19 and 21 follow-ups.
@@ -52,7 +75,7 @@ output: ioslides_presentation
 ## Sources of missing data: not-in-cohort
 
 * Response in Wave 1 to voluntary questions is required to be selected for the cohort
-& Youth who do not respond to the baseline survey are not followed-up at subsequent waves, so all survey data for these cases are missing
+     - Youth who do not respond to the baseline survey are not followed-up at subsequent waves, so all survey data for these cases are missing
 * However, demographic data are present
 * This means that the cohort is not a random or representative sample if choosing to respond is associated with any of the variables in the study.
 
@@ -78,7 +101,7 @@ output: ioslides_presentation
 
 ## Question non-response
 
-* This is the easiest form of missing data to deal with
+* This is the easiest form of missing data to deal with, but rare in NYTD
 
 # Approaches to missing data 101
 
@@ -100,7 +123,7 @@ output: ioslides_presentation
 
 * Listwise deletion (complete case analysis)
      + Appropriate for data with very few missing observations, or when missingness is completely at random and missingness is rare (independent of all observed and unobservable variables)
-* Using alternative information (e.g. inferring wages based on hours worked)
+* Using alternative information (e.g. borrowing observation of sex from prior survey wave)
 * Nonresponse weighting
      + Becomes difficult when many variables are missing, sub-populations of interest differ
 
@@ -121,8 +144,9 @@ output: ioslides_presentation
 ## What muliple imputation does:
 
 * Has two effects on model uncertainty 
-     * Increases your N because we aren't deleting data (pushes variance downward) 
-     * And adds in appropriate noise due to uncertainty around where missing values are (pushes variance upward)
+     * Increases your N because we aren't deleting data (pushes standard errors downward) 
+     * Adds in appropriate noise due to uncertainty around where missing values are (pushes standard errors upward)
+* If missingess is associated with observables, MI can correct bias in parameter estimates
 
 ## My preferred approach
 
@@ -142,15 +166,17 @@ output: ioslides_presentation
 
 * If MAR is a reasonable assumption (it often is), conduct multiple imputation
      + Because MAR is conditional on observables, including many variables in imputation models is often a good idea
-* Apply preferred final model / analysis over each of *i* imputed datasets, combine with Rubin's rules, report revised uncertainty estimates. 
+* Apply preferred final model / analysis over each imputed dataset, combine with Rubin's rules, report revised estimates. 
 
 # Applying missing data methods to NYTD: a very brief introduction
 
 ## Some notes before starting
 
 * This is a very brief introduction, more work will be required to get it right for your analysis
-* I'm using R (and the mice package) for my demo, but all major statistical software (Stata, SAS, SPSS) should be able to use similar techniques
+* I'm using R (and the mice package) for my demo, but all major statistical packages (Stata, SAS, SPSS) should be able to use similar techniques
 * All code (and slides, but no data!) is available at https://github.com/f-edwards/nytd_missing_data_demo
+* We are using NYTD Outcomes File, Cohort Age 17 in FY2011, Waves 1-3 (NDACAN Dataset 202). 
+* Submit data requests at https://www.ndacan.cornell.edu/datasets/request-dataset.cfm
 
 ## Load in packages and data
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
@@ -158,7 +184,7 @@ output: ioslides_presentation
 library(tidyverse)
 library(lubridate)
 library(mice)
-### read in comma separated data
+### read in tab separated data
 nytd<-read_tsv("Outcomes_C11W3v2.tab")
 ```
 
@@ -169,23 +195,12 @@ nytd<-read_tsv("Outcomes_C11W3v2.tab")
 pop<-sum(nytd$Wave==1)
 ### subset on those in cohort
 cohort<-nytd%>%
-  filter(FY11Cohort==1)
+  filter(FY11Cohort==1)%>%
+  filter(!(SampleState==1 & InSample==0))
 ```
 
-<!-- ```{r message = FALSE, warning = FALSE, echo = TRUE} -->
-<!-- cohort_ids<-nytd%>% -->
-<!--   filter(Wave==1, -->
-<!--          OutcmRpt==1, -->
-<!--          OutcmFCS==1)%>% -->
-<!--   ### responses must be +/- 45 days of 17th birthday -->
-<!--   filter(abs(ymd(OutcmDte) -  ymd(DOB + years(17)))<=45)%>% -->
-<!--   select(RecNumbr) -->
-<!-- ### subset into new data frame -->
-<!-- cohort<-nytd[nytd$RecNumbr%in%cohort_ids$RecNumbr,] -->
 
-<!-- ``` -->
-
-## Describe patterns of cohort and wave non-response
+## Describe response rates
 
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
 ## response rate by wave
@@ -196,19 +211,34 @@ nytd%>%filter(FY11Cohort==1)%>%
 
 ```
 
-<!-- ## Non-response by wave relative to population and cohort size -->
-<!-- ```{r message = FALSE, warning = FALSE, echo = TRUE} -->
-<!-- ### count responses per wave as pct of pop, cohort -->
-<!-- nytd%>% -->
-<!--   group_by(Wave)%>% -->
-<!--   filter(Responded==1)%>% -->
-<!--   summarise(n = n(), Pct_Pop = n()/pop, Pct_Cohort = n()/cohort) -->
-<!-- ``` -->
+## Response rates for cohort
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+plot_dat<-cohort%>%
+  filter(FY11Cohort==1)%>%
+  group_by(Wave)%>%  
+  summarise(pct_response = sum(Responded==1)/n())
+ggplot(plot_dat,
+  aes(x = Wave, y= pct_response)) + geom_col()
+```
+
+## Question non-response
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+recode_q<-function(x){recode(x, '0'="no", '1'="yes", '2'="declined", '77'="blank")}
+plot_dat<-cohort%>%
+  filter(Responded==1)%>%
+  mutate(CurrPTE = recode_q(CurrPTE))%>%
+  group_by(Wave, CurrPTE)%>%
+  summarise(count = n())
+ggplot(plot_dat,
+  aes(x = CurrPTE, y= count)) + geom_col() + facet_wrap(~Wave)
+```
+
+# What drives non-response?
 
 ## Non-response by gender
 ```{r message = FALSE, warning = FALSE, echo = FALSE}
-nytd$Sex<-ifelse(nytd$Sex==1, "Male", "Female")
-plot_dat<-nytd%>%
+cohort$Sex<-ifelse(cohort$Sex==1, "Male", "Female")
+plot_dat<-cohort%>%
   group_by(Wave, Sex)%>%
   summarise(Pct_Responded = sum(Responded==1)/n())%>%
   filter(!(is.na(Sex)))
@@ -216,44 +246,35 @@ ggplot(plot_dat,
   aes(x = Sex, y= Pct_Responded)) + geom_col() + facet_wrap(~Wave)
 ```
 
-## Non-response by race (Black/non-Black)
+## Non-response by race and wave (white / non-white)
 ```{r message = FALSE, warning = FALSE, echo = FALSE}
-nytd$BlkAfrAm<-recode(nytd$BlkAfrAm, '0' = "Not Black", '1' = "Black", '77' = "Unknown")
-plot_dat<-nytd%>%
-  group_by(Wave, BlkAfrAm)%>%
+cohort$White<-recode(cohort$White, '0' = "Non-white", '1' = "White", '77' = "Missing")
+plot_dat<-cohort%>%
+  group_by(Wave, White)%>%
   summarise(Pct_Responded = sum(Responded==1)/n())
 ggplot(plot_dat,
-  aes(x = BlkAfrAm, y= Pct_Responded)) + geom_col() + facet_wrap(~Wave)
+  aes(x = White, y= Pct_Responded)) + geom_col() + facet_wrap(~Wave)
 ```
 
-## Question non-response
-```{r message = FALSE, warning = FALSE, echo = FALSE}
-recode_q<-function(x){recode(x, '0'="no", '1'="yes", '2'="declined", '77'="blank")}
-plot_dat<-nytd%>%
-  mutate(CurrFTE = recode_q(CurrFTE))%>%
-  group_by(Wave, CurrFTE)%>%
-  summarise(count = n())
-ggplot(plot_dat,
-  aes(x = CurrFTE, y= count)) + geom_col() + facet_wrap(~Wave)
-```
 
 ## Proceeding with MI
 
-* For the purposes of demonstration, we'll assume that CurrFTE is MAR conditional on sex and age. 
-* This seems believable - desirability may encourage young men to diferentially non-respond
+* For the purposes of demonstration, we'll assume that CurrPTE is MAR conditional on sex, race/ethnicity, and age (Wave).
 * But a full imputation model should include *AS MANY* predictors as possible to maximize predictive performance and satisfy MAR assumption. This is just a demonstration of what we can do
-* Note that models grow in complexity as new predictors (with their own missing values) increase computation time 
+* Note that models grow in complexity as new predictors (with their own missing values) increase computation time
 
-```{r message = FALSE, warning = FALSE, echo = FALSE}
-nytd_reduced<-nytd%>%
-  filter(Responded==1)%>%
-    mutate(CurrFTE = recode_q(CurrFTE),
-         CurrFTE = ifelse(CurrFTE=="declined", NA, CurrFTE))%>%
-  select(Sex, Wave, CurrFTE)%>%
+## Set up imputation dataset
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+to_impute<-cohort%>%
+  select(Wave, Sex, CurrPTE, RaceEthn)%>%
+  mutate(CurrPTE = ifelse(CurrPTE == 77, NA, CurrPTE))%>%
   mutate(Sex = factor(Sex),
          Wave = factor(Wave),
-         CurrFTE = factor(CurrFTE))
-  
+         CurrPTE = factor(CurrPTE),
+         RaceEthn = factor(ifelse(RaceEthn==99, NA, RaceEthn)))
+
+head(to_impute)
+
 ```
 
 ## Look at missing data patterns
@@ -261,66 +282,107 @@ nytd_reduced<-nytd%>%
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
 ### install.packages("mice") if needed
 ### wonderful tutorials at https://stefvanbuuren.github.io/mice/
-library(mice)
-mice::md.pattern(nytd_reduced)
-### 1 = variable not missing, zero = missing, 
-## #first row is count of observations
+summary(to_impute)
 ```
+
 ## Predictors and methods
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
-imp<-mice(nytd_reduced, maxit=0, seed = 123)
+imp<-mice(to_impute, maxit=0, seed = 123)
 ### show the predictor matrix
 imp$predictorMatrix
-### show imputation methods
+### show imputation methods, logistic and multinomial
 imp$method
 ```
 
 ## Impute data with 5 imputed data sets
 
 ```{r message = FALSE, warning = FALSE, cache = TRUE}
-imp_out<-mice(nytd_reduced, 
-              maxit = 10, 
-              m = 5, 
+imp_out<-mice(to_impute,
+              maxit = 10,
+              m = 5,
               seed = 123,
               predictorMatrix = imp$predictorMatrix,
               method = imp$method)
 ```
+
 ## Check out convergence
-```{r message = FALSE, warning = FALSE, echo = TRUE}
+```{r message = FALSE, warning = FALSE, echo = FALSE}
 
 plot(imp_out)
 
 ```
 
-## Compare imputed to original data
-```{r message = FALSE, warning = FALSE, echo = TRUE}
-### first imputed dataset
-table(nytd_reduced$CurrFTE)
-table(complete(imp_out)$CurrFTE)
+## Check out effects of imputation on CurrPTE
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+imputed<-complete(imp_out, action = "long", include = TRUE)
+
+ggplot(imputed, aes (x = CurrPTE)) + 
+  geom_histogram(stat="count")+
+  facet_wrap(~.imp)
+
 ```
 
+## Compare imputed to original data
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+imputed%>%
+  group_by(.imp)%>%
+  summarise(pct_PTE = sum(CurrPTE==1, na.rm=TRUE)/n(),
+            pct_nonPTE=sum(CurrPTE==0, na.rm=TRUE)/n())
+```
+
+## Only among non-missings
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+imputed%>%
+  group_by(.imp)%>%
+  filter((!(is.na(CurrPTE))))%>%
+  summarise(pct_PTE = sum(CurrPTE==1, na.rm=TRUE)/n(),
+            pct_nonPTE=sum(CurrPTE==0, na.rm=TRUE)/n())
+
+```
 
 ## Conduct a pooled analysis
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
 ### fit logistic regression on each imputed data set
-fit<-with(imp_out, glm(CurrFTE == "yes" ~ Sex + Wave, 
+fit_imp<-with(imp_out, glm(CurrPTE == "1" ~ (Sex=="Male") + 
+                             Wave + RaceEthn, 
                        family = "binomial"))
-### can view individual model outputs with summary(fit)
+## Pool results with Rubin's rules 
+pooled<-pool(fit_imp)
+### just with observed data
+fit<-with(to_impute, glm(CurrPTE == "1" ~ (Sex=="Male") + 
+                           Wave + RaceEthn,
+                       family = "binomial"))
 ```
-## View model output
+
+## Compare models
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
-summary(pool(fit))[,1:3]
+library(broom)
+# with only observed
+tidy(fit)[1:2, 1:3]
+# with imputed data
+summary(pooled)[1:2, 1:2]
 ```
+
 # Going deeper
 
-## Possible extensions of this method
+## What we accomplished
 
-* The method allows us to preserve data for respondents who selectively did not answer individual questions within NYTD
-* The method could be extended to impute missing records for respondents who did not respond to the full survey in individual waves
-     + Multilevel imputation procedures are appropriate for these cases
-     
+* We adjusted our models for non-response bias between waves
+     -  We imputed 5 complete datasets for the cohort, averaged over uncertainty in our models
+* This appears to matter for our estimates of Employment ~ Gender
+
+## This approach is incomplete
+
+* We haven't dealt with selection into the cohort
+* We haven't fully explored the mechanisms of missing data
+* Our model is too simplistic
+     - Incorporate documented reason for non-response into models
+     - Extend to focal variables for your analysis
+     - Think carefully about why your variable is missing, what other observed variables in the data may help you estimate uncertainty
+* Bonus points: go multilevel
+
 ## Possible extensions of this method
-* Theoretically, the method could be used to estimate uncertainty intervals for population-level parameters for the full NYTD-eligible population
+* Theoretically, the method could be used to estimate uncertainty intervals for parameters for the full NYTD-eligible population
      + Though this would be computationally intensive and 
      + Stretch the MAR assumption perhaps too far (if participation in the cohort is conditional on unobservables)
      
@@ -336,10 +398,20 @@ summary(pool(fit))[,1:3]
 * Gelman and Hill, "Data Analysis Using Regression and Multilevel/Hierarchical Models"
 * van Buuren, "mice: Multivariate Imputation by Chained Equations in R"
 
-## Thank you
+## Questions?
+
+Please use the chat feature in Zoom to submit questions during the Q and A
 
 Code and slides available at:
 
 https://github.com/f-edwards/nytd_missing_data_demo
 
-fedwards@cornell.edu
+Frank: fedwards@cornell.edu
+Michael: med39@cornell.edu
+
+## Next Week
+
+* Date: Wednesday August 29th from 12pm-1pm
+* Presenter: Michael Dineen, BCTR at Cornell University
+* Topic: Expert Presentation II-Developing and using sample weights, and other common questions we get from data users. 
+
