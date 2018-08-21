@@ -32,8 +32,11 @@ output: ioslides_presentation
 
 ## Who is in the cohort?
 
-* Youth who answer at least one survey question on the baseline survey are in the cohort.
-* Follow-up surveys are conducted on youth in the cohort during the six-month AFCARS reporting period that includes the youth's 19th and 21st birthdays. 
+* Youth who:
+     - Are in foster care at the time they took the survey
+     - Answer at least one survey question on the baseline survey
+     - Took the survey within 45 days of their 17th birthday
+* Follow-up surveys are conducted during the six-month AFCARS reporting period that includes the youth's 19th and 21st birthdays. 
 
 # Sampling in the NYTD
 
@@ -43,11 +46,6 @@ output: ioslides_presentation
 * Simple random sampling is required
 * Sampling is done once, after the cohort is determined. 
 * The same sample is used for both the age 19 and age 21 surveys.
-
-## The consequences of sampling for data analysis
-
-* Sampling lowers the response rate, since the denominator is always the population the survey is intended to represent - i.e. age 17 foster care youth.
-* Sample states lost about 75% of their cases at Wave 2; Non-sample states lost about 45%
 
 # Sources of missing data in the NYTD
 
@@ -63,7 +61,6 @@ output: ioslides_presentation
 * Youth did not participate in a wave. 
 * All survey data for that wave will be missing for that row. 
 * Demographics will be present. 
-* This is common. Of the 18,213 youth eligible at Wave 1, only 5,663 responded to all three surveys, and 8,837 responded only at Wave 1.
 
 ## Reasons for non-response
 
@@ -81,8 +78,7 @@ output: ioslides_presentation
 
 ## Question non-response
 
-* Very few respondents answered all the questions
-     + This is the easiest form of missing data to deal with!
+* This is the easiest form of missing data to deal with
 
 # Approaches to missing data 101
 
@@ -160,37 +156,54 @@ output: ioslides_presentation
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
 ### load required packages
 library(tidyverse)
+library(lubridate)
 library(mice)
 ### read in comma separated data
-nytd<-read_csv("nytd.csv")
-demographics<-read_csv("nytd_demog.csv")
+nytd<-read_tsv("Outcomes_C11W3v2.tab")
 ```
+
+
+## Create cohort subset
+```{r message = FALSE, warning = FALSE, echo = TRUE}
+### count total population, cohort based on baseline
+pop<-sum(nytd$Wave==1)
+### subset on those in cohort
+cohort<-nytd%>%
+  filter(FY11Cohort==1)
+```
+
+<!-- ```{r message = FALSE, warning = FALSE, echo = TRUE} -->
+<!-- cohort_ids<-nytd%>% -->
+<!--   filter(Wave==1, -->
+<!--          OutcmRpt==1, -->
+<!--          OutcmFCS==1)%>% -->
+<!--   ### responses must be +/- 45 days of 17th birthday -->
+<!--   filter(abs(ymd(OutcmDte) -  ymd(DOB + years(17)))<=45)%>% -->
+<!--   select(RecNumbr) -->
+<!-- ### subset into new data frame -->
+<!-- cohort<-nytd[nytd$RecNumbr%in%cohort_ids$RecNumbr,] -->
+
+<!-- ``` -->
 
 ## Describe patterns of cohort and wave non-response
-```{r message = FALSE, warning = FALSE, echo = TRUE}
-### count total subjects
-length(unique(demographics$StFCID))
-### count responses per wave
-table(nytd$Wave, nytd$Responded==1)
-```
 
-## Total population and cohort size
 ```{r message = FALSE, warning = FALSE, echo = TRUE}
-### count total population, cohort based on W1 response
-pop<-length(unique(demographics$StFCID))
-pop
-cohort<-sum(nytd[nytd$Wave==1, "Responded"]==1)
-cohort
-```
-
-## Non-response by wave relative to population and cohort size
-```{r message = FALSE, warning = FALSE, echo = TRUE}
-### count responses per wave as pct of pop, cohort
-nytd%>%
-  group_by(Wave)%>%
+## response rate by wave
+nytd%>%filter(FY11Cohort==1)%>%
   filter(Responded==1)%>%
-  summarise(n = n(), Pct_Pop = n()/pop, Pct_Cohort = n()/cohort)
+  group_by(Wave)%>%
+  summarise(baseline = pop, responses = n(), response_rate = n()/pop)
+
 ```
+
+<!-- ## Non-response by wave relative to population and cohort size -->
+<!-- ```{r message = FALSE, warning = FALSE, echo = TRUE} -->
+<!-- ### count responses per wave as pct of pop, cohort -->
+<!-- nytd%>% -->
+<!--   group_by(Wave)%>% -->
+<!--   filter(Responded==1)%>% -->
+<!--   summarise(n = n(), Pct_Pop = n()/pop, Pct_Cohort = n()/cohort) -->
+<!-- ``` -->
 
 ## Non-response by gender
 ```{r message = FALSE, warning = FALSE, echo = FALSE}
